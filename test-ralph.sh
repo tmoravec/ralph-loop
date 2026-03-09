@@ -35,7 +35,7 @@ VERIFY_CMD="echo 'Verification step: attempt count is \$(cat /tmp/attempt_count.
 
 # Run Ralph Loop with mock AI
 echo "=== Testing Ralph Loop with mock AI ==="
-./ralph-loop.sh "Complete a simple task" "$MOCK_AI_SCRIPT" "$VERIFY_CMD"
+./ralph.sh "Complete a simple task" "$MOCK_AI_SCRIPT" "$VERIFY_CMD"
 
 # Cleanup
 rm -f "$MOCK_AI_SCRIPT" /tmp/attempt_count.txt

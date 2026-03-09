@@ -17,7 +17,7 @@ EOF
 chmod +x "$MOCK_AI"
 
 echo "=== Testing custom verification command ==="
-./ralph-loop.sh "Create file" "$MOCK_AI" "touch /tmp/testfile && echo 'File created'"
+./ralph.sh "Create file" "$MOCK_AI" "touch /tmp/testfile && echo 'File created'"
 
 rm -f "$MOCK_AI" /tmp/testfile
 echo "=== Done ==="

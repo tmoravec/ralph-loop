@@ -1,26 +1,31 @@
-# Ralph Loop (Simplified)
+# Ralph
 
-A minimal Bash script for autonomous agentic coding using a "brute-force persistence loop" that feeds an AI its own previous errors until it achieves success. This version removes unnecessary options and environment variables, focusing on simplicity.
+A minimal Bash script for autonomous agentic coding using a "brute-force persistence loop" that feeds an AI its own previous errors until it achieves success.
+
+_There are many Ralph loop implementations. This is no better than the others, but it's mine. I wrote it, I can understand it, and I can enhance it._
 
 ## Features
 
 - **Generic AI Integration**: Works with any CLI tool (pi, claude-code, gemini, vibe, or custom wrappers).
 - **State Capture**: Runs a verification command after each attempt to capture the latest errors or state.
-- **Robustness**: Handles file truncation issues and provides clean state management.
 - **Simple Configuration**: Just three optional arguments—no environment variables or complex options.
 
 ## Quick Start
 
 ```bash
 # Basic usage with default AI command (pi)
-./ralph-loop.sh "Write a factorial function in Python"
+./ralph.sh "Write a factorial function in Python"
 
 # Specify a different AI command
-./ralph-loop.sh "Fix tests" "gemini"
+./ralph.sh "Fix tests" "gemini"
 
 # Specify AI command and verification command
-./ralph-loop.sh "Fix build" "claude-code" "make clean && make"
+./ralph.sh "Fix build" "claude-code" "make clean && make"
 ```
+
+## Installation
+
+Just put the ralph.sh file to the root directory of the project and tweak it to your liking.
 
 ## Configuration
 
@@ -32,7 +37,7 @@ Edit the defaults at the top of the script if you need to change:
 
 Example:
 ```bash
-# Edit ralph-loop.sh and change these lines:
+# Edit ralph.sh and change these lines:
 AI_COMMAND="claude-code"
 MAX_LOOPS=50
 PROMISE_STRING="SUCCESS"
@@ -41,7 +46,7 @@ PROMISE_STRING="SUCCESS"
 ## Usage
 
 ```text
-Usage: ./ralph-loop.sh <task> [ai-command] [verify-command]
+Usage: ./ralph.sh <task> [ai-command] [verify-command]
 
 Arguments:
   task           The task description for the AI (required)
@@ -59,26 +64,6 @@ The verification command can reference $OUTPUT_FILE (the temporary output file).
 3. **Verify Success**: Checks the AI response for the `PROMISE_STRING` ("TASK_SUCCESS").
 4. **Iterate**: If not found, appends the AI's response to the state, runs the verification command again, and loops.
 5. **Finalize**: Cleans up temporary state files and exits with success or failure.
-
-## Examples
-
-### Using a Different AI Tool
-
-```bash
-./ralph-loop.sh "Write a bash script" "claude-code"
-```
-
-### Running Tests After Each Iteration
-
-```bash
-./ralph-loop.sh "Fix failing tests" "pi" "npm test 2>&1"
-```
-
-### Checking File Output
-
-```bash
-./ralph-loop.sh "Generate a config file" "gemini" "cat output.txt 2>/dev/null || echo 'No output'"
-```
 
 ## Troubleshooting
 

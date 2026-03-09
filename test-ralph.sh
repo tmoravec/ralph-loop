@@ -31,14 +31,11 @@ EOF
 chmod +x "$MOCK_AI_SCRIPT"
 
 # Create a simple verification command that just echoes current output
-export RALPH_VERIFICATION_COMMAND="echo 'Verification step: attempt count is \$(cat /tmp/attempt_count.txt 2>/dev/null || echo 0)'"
+VERIFY_CMD="echo 'Verification step: attempt count is \$(cat /tmp/attempt_count.txt 2>/dev/null || echo 0)'"
 
 # Run Ralph Loop with mock AI
 echo "=== Testing Ralph Loop with mock AI ==="
-AI_COMMAND="$MOCK_AI_SCRIPT" \
-MAX_LOOPS=5 \
-PROMISE_STRING="TASK_SUCCESS" \
-./ralph-loop.sh "Complete a simple task"
+./ralph-loop.sh "Complete a simple task" "$MOCK_AI_SCRIPT" "$VERIFY_CMD"
 
 # Cleanup
 rm -f "$MOCK_AI_SCRIPT" /tmp/attempt_count.txt

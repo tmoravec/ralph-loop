@@ -1,15 +1,13 @@
-# Ralph Loop
+# Ralph Loop (Simplified)
 
-A robust, generic Bash script for autonomous agentic coding using a "brute-force persistence loop" that feeds an AI its own previous errors until it achieves success.
+A minimal Bash script for autonomous agentic coding using a "brute-force persistence loop" that feeds an AI its own previous errors until it achieves success. This version removes unnecessary options and environment variables, focusing on simplicity.
 
 ## Features
 
-- **Generic AI Integration**: Works with any CLI tool (claude-code, gemini-cli, vibe, or custom wrappers).
+- **Generic AI Integration**: Works with any CLI tool (pi, claude-code, gemini-cli, vibe, or custom wrappers).
 - **State Capture**: Runs a verification command after each attempt to capture the latest errors or state.
 - **Robustness**: Handles file truncation issues and provides clean state management.
-- **Prompt Templating**: Customize exactly how the task and state are presented to the AI.
-- **Flexible Options**: Override everything via environment variables or command-line arguments.
-- **Color Logging**: Clear, readable output with informational tags sent to stderr.
+- **Simple Configuration**: Just three optional arguments—no environment variables or complex options.
 
 ## Installation
 
@@ -21,62 +19,79 @@ chmod +x ralph-loop.sh
 ## Quick Start
 
 ```bash
-# Basic usage
+# Basic usage with default AI command (pi)
 ./ralph-loop.sh "Write a factorial function in Python"
 
-# With flags
-./ralph-loop.sh "Fix tests" --ai-command "gemini-cli" --max-loops 10
+# Specify a different AI command
+./ralph-loop.sh "Fix tests" "gemini-cli"
 
-# With verification command
-./ralph-loop.sh "Fix build" --verify "make clean && make"
+# Specify AI command and verification command
+./ralph-loop.sh "Fix build" "claude-code" "make clean && make"
+```
+
+## Configuration
+
+Edit the defaults at the top of the script if you need to change:
+- `AI_COMMAND`: default AI command (default: `pi`)
+- `MAX_LOOPS`: maximum iterations before giving up (default: `20`)
+- `PROMISE_STRING`: success indicator string (default: `TASK_SUCCESS`)
+- `VERIFY_COMMAND`: default verification command (default: `cat "$OUTPUT_FILE"`)
+
+Example:
+```bash
+# Edit ralph-loop.sh and change these lines:
+AI_COMMAND="claude-code"
+MAX_LOOPS=50
+PROMISE_STRING="SUCCESS"
 ```
 
 ## Usage
 
 ```text
-Usage: ./ralph-loop.sh [options] [task]
+Usage: ./ralph-loop.sh <task> [ai-command] [verify-command]
 
-Options:
-  -a, --ai-command <cmd>      AI command to run (default: claude-code)
-  -m, --max-loops <num>       Maximum iterations (default: 20)
-  -p, --promise <string>      String to signal success (default: TASK_SUCCESS)
-  -v, --verbose <level>       Verbosity level 0-2 (default: 1)
-  -c, --verify <cmd>          Verification command (default: cat "$OUTPUT_FILE")
-  -h, --help                  Show help
-```
+Arguments:
+  task           The task description for the AI (required)
+  ai-command     AI command to run (default: pi)
+  verify-command Command to capture state after each iteration (default: cat "$OUTPUT_FILE")
 
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `AI_COMMAND` | AI tool to use | `claude-code` |
-| `MAX_LOOPS` | Max iterations | `20` |
-| `PROMISE_STRING` | Success indicator | `TASK_SUCCESS` |
-| `RALPH_VERIFICATION_COMMAND` | State capture command | `cat "$OUTPUT_FILE"` |
-| `RALPH_PROMPT_TEMPLATE` | Custom prompt structure | See script |
-| `VERBOSE` | Logging level | `1` |
-
-### Prompt Templates
-Use `{TASK}`, `{STATE}`, and `{PROMISE}` as placeholders:
-```bash
-export RALPH_PROMPT_TEMPLATE="Task: {TASK}\nState: {STATE}\nSuccess if: {PROMISE}"
+The AI command must read a prompt from stdin and output to stdout.
+The verification command can reference $OUTPUT_FILE (the temporary output file).
 ```
 
 ## How It Works
 
 1. **Capture State**: Runs the verification command to get initial context.
 2. **Consult AI**: Sends the task and current state to the AI tool.
-3. **Verify Success**: Checks the AI response for the `PROMISE_STRING`.
+3. **Verify Success**: Checks the AI response for the `PROMISE_STRING` ("TASK_SUCCESS").
 4. **Iterate**: If not found, appends the AI's response to the state, runs the verification command again, and loops.
 5. **Finalize**: Cleans up temporary state files and exits with success or failure.
+
+## Examples
+
+### Using a Different AI Tool
+
+```bash
+./ralph-loop.sh "Write a bash script" "claude-code"
+```
+
+### Running Tests After Each Iteration
+
+```bash
+./ralph-loop.sh "Fix failing tests" "pi" "npm test 2>&1"
+```
+
+### Checking File Output
+
+```bash
+./ralph-loop.sh "Generate a config file" "gemini-cli" "cat output.txt 2>/dev/null || echo 'No output'"
+```
 
 ## Troubleshooting
 
 - **AI output polluted**: The script sends all logs to `stderr`, so your AI tool's output should be clean on `stdout`.
 - **Command not found**: Ensure your tool is in the PATH or use an absolute path.
-- **Max loops reached**: Increase `--max-loops` or improve your verification command to provide better feedback.
+- **Max loops reached**: Increase `MAX_LOOPS` in the script or improve your verification command to provide better feedback.
 
 ## License
 

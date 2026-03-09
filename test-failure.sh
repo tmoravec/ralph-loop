@@ -11,11 +11,7 @@ EOF
 chmod +x "$MOCK_AI_SCRIPT"
 
 echo "=== Testing failure case (max loops reached) ==="
-AI_COMMAND="$MOCK_AI_SCRIPT" \
-MAX_LOOPS=3 \
-PROMISE_STRING="SUCCESS" \
-VERBOSE=1 \
-./ralph-loop.sh "Some task" 2>&1 | tail -10
+./ralph-loop.sh "Some task" "$MOCK_AI_SCRIPT" "echo 'nothing'" 2>&1 | tail -10
 
 rm -f "$MOCK_AI_SCRIPT"
 echo "=== Test complete ==="

@@ -11,32 +11,21 @@ MAX_LOOPS=20
 PROMISE_STRING="TASK_SUCCESS"
 STATE_TAIL_LINES=200
 
-# Colors for logging
-RED='\033[0;31m'
-GREEN='\033[1;32m'
-CYAN='\033[1;36m'
-MAGENTA='\033[1;35m'
+BOLD='\033[1m'
+RED='\033[1;31m'
 NC='\033[0m'
 
 log() {
-    echo -e "${MAGENTA}[INFO]${NC} $@" >&2
-}
-
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $@" >&2
+    echo -e "${BOLD}[INFO]${NC} $*" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $@" >&2
-}
-
-log_warning() {
-    echo -e "${CYAN}[WARNING]${NC} $@" >&2
+    echo -e "${RED}[ERROR]${NC} $*" >&2
 }
 
 # Check AI command exists
 check_ai_command() {
-    local cmd=$(echo "$AI_COMMAND" | awk '{print $1}')
+    local cmd="${AI_COMMAND%% *}"
     if ! command -v "$cmd" >/dev/null 2>&1; then
         log_error "AI command '$cmd' not found in PATH."
         exit 1
@@ -47,30 +36,24 @@ check_ai_command() {
 run_ai() {
     local prompt="$1"
     log "Executing AI command..."
-    local response
-    
+    local response rc=0
+
     # Handle gemini specially - it requires -y -p for non-interactive mode
     if [[ "$AI_COMMAND" == gemini* ]]; then
-        if response=$(gemini -y -p "$prompt" 2>&1); then
-            echo "$response"
-        else
-            log_error "AI command failed with exit code $?"
-            echo "$response"
-            return 1
-        fi
+        response=$(gemini -y -p "$prompt" 2>&1) || rc=$?
     else
-        if response=$(echo "$prompt" | $AI_COMMAND 2>&1); then
-            echo "$response"
-        else
-            log_error "AI command failed with exit code $?"
-            echo "$response"
-            return 1
-        fi
+        response=$(echo "$prompt" | $AI_COMMAND 2>&1) || rc=$?
+    fi
+
+    echo "$response"
+    if [ $rc -ne 0 ]; then
+        log_error "AI command failed with exit code $rc"
+        return 1
     fi
 }
 
 # Check for promise string AND verification command exit code.
-# On either path, writes verify output to $OUTPUT_FILE and returns verify's exit code.
+# Always runs the verify command and writes its output to $OUTPUT_FILE.
 check_success() {
     local ai_response="$1"
     local cmd="${VERIFY_COMMAND//\$OUTPUT_FILE/$OUTPUT_FILE}"
@@ -91,10 +74,14 @@ show_usage() {
     echo "  verify-command Command to capture state after each iteration (default: cat \"\$OUTPUT_FILE\")"
 }
 
-if [ $# -lt 1 ] || [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     show_usage
-    # Exit with 0 if help requested, 1 if no arguments
-    [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && exit 0 || exit 1
+    exit 0
+fi
+
+if [ $# -lt 1 ]; then
+    show_usage
+    exit 1
 fi
 
 TASK="$1"
@@ -116,11 +103,10 @@ trap 'rm -f "$OUTPUT_FILE" "${OUTPUT_FILE}.tmp" 2>/dev/null' EXIT
 
 for (( i=1; i<=MAX_LOOPS; i++ )); do
     log "=== Loop $i/$MAX_LOOPS ==="
-    
-    CURRENT_STATE=$(tail -n "$STATE_TAIL_LINES" "$OUTPUT_FILE")
+
+    CURRENT_STATE=$(tail -n "$STATE_TAIL_LINES" "$OUTPUT_FILE" 2>/dev/null || true)
     log "Current state: ${#CURRENT_STATE} chars (last $STATE_TAIL_LINES lines)"
-    
-    # Construct prompt
+
     PROMPT="$TASK
 
 Current state/output from previous iteration (last $STATE_TAIL_LINES lines):
@@ -129,18 +115,16 @@ $CURRENT_STATE
 ---
 
 Please fix any errors and ensure the task is completed. If successful, output the exact string: $PROMISE_STRING"
-    
+
     if ! AI_RESPONSE=$(run_ai "$PROMPT"); then
-        log_warning "AI command returned an error. Continuing anyway..."
+        log_error "AI command returned an error. Continuing anyway..."
     fi
-    
+
     if check_success "$AI_RESPONSE"; then
-        log_success "Task accomplished!"
-        echo -e "\n${CYAN}=== SUMMARY OF ACCOMPLISHMENT ===${NC}"
-        # Print AI response (stripping the promise string and surrounding quotes for cleaner summary)
-        echo "$AI_RESPONSE" | sed "s/$PROMISE_STRING//g" | sed "s/^'//;s/'$//" | sed '/^[[:space:]]*$/d'
-        echo -e "${CYAN}=================================${NC}\n"
-        log "Terminated successfully in iteration $i."
+        log "Task accomplished in iteration $i!"
+        echo ""
+        echo "$AI_RESPONSE" | sed "/^[[:space:]]*$/d;s/$PROMISE_STRING//g;s/^'//;s/'$//"
+        echo ""
         exit 0
     else
         log "Goal not met. Updating state for next iteration..."
@@ -158,7 +142,7 @@ Please fix any errors and ensure the task is completed. If successful, output th
 done
 
 log_error "Max loops ($MAX_LOOPS) reached without success."
-echo -e "\n${RED}=== FINAL ATTEMPT STATE ===${NC}"
+echo ""
 cat "$OUTPUT_FILE"
-echo -e "${RED}===========================${NC}\n"
+echo ""
 exit 1

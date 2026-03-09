@@ -87,14 +87,19 @@ capture_state() {
 }
 
 # Main
-if [ $# -lt 1 ]; then
+show_usage() {
     echo "Usage: $0 <task> [ai-command] [verify-command]"
     echo ""
     echo "Arguments:"
     echo "  task           The task description for the AI (required)"
     echo "  ai-command     AI command to run (default: pi)"
     echo "  verify-command Command to capture state after each iteration (default: cat \"\$OUTPUT_FILE\")"
-    exit 1
+}
+
+if [ $# -lt 1 ] || [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+    show_usage
+    # Exit with 0 if help requested, 1 if no arguments
+    [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && exit 0 || exit 1
 fi
 
 TASK="$1"

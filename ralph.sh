@@ -9,6 +9,7 @@ AI_COMMAND="pi"
 VERIFY_COMMAND='cat "$OUTPUT_FILE"'
 MAX_LOOPS=20
 PROMISE_STRING="TASK_SUCCESS"
+STATE_TAIL_LINES=200
 
 # Colors for logging
 RED='\033[0;31m'
@@ -127,13 +128,13 @@ trap 'rm -f "$OUTPUT_FILE" "${OUTPUT_FILE}.tmp" "${OUTPUT_FILE}.verify" 2>/dev/n
 for (( i=1; i<=MAX_LOOPS; i++ )); do
     log "=== Loop $i/$MAX_LOOPS ==="
     
-    CURRENT_STATE=$(cat "$OUTPUT_FILE")
-    log "Current state size: ${#CURRENT_STATE} chars"
+    CURRENT_STATE=$(tail -n "$STATE_TAIL_LINES" "$OUTPUT_FILE")
+    log "Current state: ${#CURRENT_STATE} chars (last $STATE_TAIL_LINES lines)"
     
     # Construct prompt
     PROMPT="$TASK
 
-Current state/output from previous iteration:
+Current state/output from previous iteration (last $STATE_TAIL_LINES lines):
 ---
 $CURRENT_STATE
 ---

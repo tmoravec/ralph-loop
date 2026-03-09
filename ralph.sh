@@ -152,11 +152,9 @@ Please fix any errors and ensure the task is completed. If successful, output th
             echo "--- VERIFICATION OUTPUT ---"
         } > "${OUTPUT_FILE}.next"
         
-        mv "$OUTPUT_FILE" "${OUTPUT_FILE}.prev"
         update_state
         cat "$OUTPUT_FILE" >> "${OUTPUT_FILE}.next"
         mv "${OUTPUT_FILE}.next" "$OUTPUT_FILE"
-        rm -f "${OUTPUT_FILE}.prev"
     fi
 done
 

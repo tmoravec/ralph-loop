@@ -69,22 +69,16 @@ run_ai() {
     fi
 }
 
-# Check for promise string
+# Check for promise string AND verification command exit code.
+# On either path, writes verify output to $OUTPUT_FILE and returns verify's exit code.
 check_success() {
-    echo "$1" | grep -q "$PROMISE_STRING"
-}
-
-# Run verification command and write result to dest
-capture_state() {
-    local dest="$1"
+    local ai_response="$1"
     local cmd="${VERIFY_COMMAND//\$OUTPUT_FILE/$OUTPUT_FILE}"
-    local tmp="${dest}.tmp"
-    if bash -c "$cmd" > "$tmp" 2>&1; then
-        mv "$tmp" "$dest"
-    else
-        log_warning "Verification command exited with non-zero status ($?)"
-        mv "$tmp" "$dest"
-    fi
+    local tmp="${OUTPUT_FILE}.tmp"
+    local rc=0
+    bash -c "$cmd" > "$tmp" 2>&1 || rc=$?
+    mv "$tmp" "$OUTPUT_FILE"
+    echo "$ai_response" | grep -q "$PROMISE_STRING" && [ $rc -eq 0 ]
 }
 
 # Main
@@ -108,7 +102,6 @@ AI_COMMAND="${2:-pi}"
 VERIFY_COMMAND="${3:-cat \"\$OUTPUT_FILE\"}"
 
 OUTPUT_FILE="/tmp/ralph_output_$(date +%s)_$$.txt"
-echo "Initializing..." > "$OUTPUT_FILE"
 
 check_ai_command
 
@@ -119,11 +112,7 @@ log "Promise: '$PROMISE_STRING'"
 log "Max loops: $MAX_LOOPS"
 log "Temp file: $OUTPUT_FILE"
 
-# Initial state capture
-log "Performing initial state capture..."
-capture_state "$OUTPUT_FILE"
-
-trap 'rm -f "$OUTPUT_FILE" "${OUTPUT_FILE}.tmp" "${OUTPUT_FILE}.verify" 2>/dev/null' EXIT
+trap 'rm -f "$OUTPUT_FILE" "${OUTPUT_FILE}.tmp" 2>/dev/null' EXIT
 
 for (( i=1; i<=MAX_LOOPS; i++ )); do
     log "=== Loop $i/$MAX_LOOPS ==="
@@ -155,21 +144,16 @@ Please fix any errors and ensure the task is completed. If successful, output th
         exit 0
     else
         log "Goal not met. Updating state for next iteration..."
-        
-        # Build next state
-        verify_out="${OUTPUT_FILE}.verify"
-        capture_state "$verify_out"
-
+        # check_success already wrote verify output to $OUTPUT_FILE; prepend the AI response
+        VERIFY_OUTPUT=$(cat "$OUTPUT_FILE")
         {
             echo "--- AI RESPONSE ---"
             echo "$AI_RESPONSE" | sed "s/^'//;s/'$//"
             echo "-------------------"
             echo ""
             echo "--- VERIFICATION OUTPUT ---"
-            cat "$verify_out"
+            echo "$VERIFY_OUTPUT"
         } > "$OUTPUT_FILE"
-
-        rm -f "$verify_out"
     fi
 done
 

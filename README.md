@@ -4,17 +4,10 @@ A minimal Bash script for autonomous agentic coding using a "brute-force persist
 
 ## Features
 
-- **Generic AI Integration**: Works with any CLI tool (pi, claude-code, gemini-cli, vibe, or custom wrappers).
+- **Generic AI Integration**: Works with any CLI tool (pi, claude-code, gemini, vibe, or custom wrappers).
 - **State Capture**: Runs a verification command after each attempt to capture the latest errors or state.
 - **Robustness**: Handles file truncation issues and provides clean state management.
 - **Simple Configuration**: Just three optional arguments—no environment variables or complex options.
-
-## Installation
-
-```bash
-curl -o ralph-loop.sh https://raw.githubusercontent.com/yourusername/ralph/main/ralph-loop.sh
-chmod +x ralph-loop.sh
-```
 
 ## Quick Start
 
@@ -23,7 +16,7 @@ chmod +x ralph-loop.sh
 ./ralph-loop.sh "Write a factorial function in Python"
 
 # Specify a different AI command
-./ralph-loop.sh "Fix tests" "gemini-cli"
+./ralph-loop.sh "Fix tests" "gemini"
 
 # Specify AI command and verification command
 ./ralph-loop.sh "Fix build" "claude-code" "make clean && make"
@@ -84,7 +77,7 @@ The verification command can reference $OUTPUT_FILE (the temporary output file).
 ### Checking File Output
 
 ```bash
-./ralph-loop.sh "Generate a config file" "gemini-cli" "cat output.txt 2>/dev/null || echo 'No output'"
+./ralph-loop.sh "Generate a config file" "gemini" "cat output.txt 2>/dev/null || echo 'No output'"
 ```
 
 ## Troubleshooting

@@ -47,12 +47,24 @@ run_ai() {
     local prompt="$1"
     log "Executing AI command..."
     local response
-    if response=$(echo "$prompt" | $AI_COMMAND 2>&1); then
-        echo "$response"
+    
+    # Handle gemini specially - it requires -y -p for non-interactive mode
+    if [[ "$AI_COMMAND" == gemini* ]]; then
+        if response=$(gemini -y -p "$prompt" 2>&1); then
+            echo "$response"
+        else
+            log_error "AI command failed with exit code $?"
+            echo "$response"
+            return 1
+        fi
     else
-        log_error "AI command failed with exit code $?"
-        echo "$response"
-        return 1
+        if response=$(echo "$prompt" | $AI_COMMAND 2>&1); then
+            echo "$response"
+        else
+            log_error "AI command failed with exit code $?"
+            echo "$response"
+            return 1
+        fi
     fi
 }
 
@@ -96,6 +108,7 @@ log "Task: $TASK"
 log "AI: $AI_COMMAND"
 log "Promise: '$PROMISE_STRING'"
 log "Max loops: $MAX_LOOPS"
+log "Temp file: $OUTPUT_FILE"
 
 # Initial state capture
 log "Performing initial state capture..."

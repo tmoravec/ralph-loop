@@ -13,12 +13,12 @@ PROMISE_STRING="TASK_SUCCESS"
 # Colors for logging
 RED='\033[0;31m'
 GREEN='\033[1;32m'
-YELLOW='\033[1;36m'
-BLUE='\033[1;35m'
+CYAN='\033[1;36m'
+MAGENTA='\033[1;35m'
 NC='\033[0m'
 
 log() {
-    echo -e "${BLUE}[INFO]${NC} $@" >&2
+    echo -e "${MAGENTA}[INFO]${NC} $@" >&2
 }
 
 log_success() {
@@ -30,7 +30,7 @@ log_error() {
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $@" >&2
+    echo -e "${CYAN}[WARNING]${NC} $@" >&2
 }
 
 # Check AI command exists
@@ -145,8 +145,12 @@ Please fix any errors and ensure the task is completed. If successful, output th
     fi
     
     if check_success "$AI_RESPONSE"; then
-        log_success "Promise string '$PROMISE_STRING' found!"
-        log "Task completed in iteration $i."
+        log_success "Task accomplished!"
+        echo -e "\n${CYAN}=== SUMMARY OF ACCOMPLISHMENT ===${NC}"
+        # Print AI response (stripping the promise string and surrounding quotes for cleaner summary)
+        echo "$AI_RESPONSE" | sed "s/$PROMISE_STRING//g" | sed "s/^'//;s/'$//" | sed '/^[[:space:]]*$/d'
+        echo -e "${CYAN}=================================${NC}\n"
+        log "Terminated successfully in iteration $i."
         exit 0
     else
         log "Goal not met. Updating state for next iteration..."
@@ -157,7 +161,7 @@ Please fix any errors and ensure the task is completed. If successful, output th
 
         {
             echo "--- AI RESPONSE ---"
-            echo "$AI_RESPONSE"
+            echo "$AI_RESPONSE" | sed "s/^'//;s/'$//"
             echo "-------------------"
             echo ""
             echo "--- VERIFICATION OUTPUT ---"
@@ -169,4 +173,7 @@ Please fix any errors and ensure the task is completed. If successful, output th
 done
 
 log_error "Max loops ($MAX_LOOPS) reached without success."
+echo -e "\n${RED}=== FINAL ATTEMPT STATE ===${NC}"
+cat "$OUTPUT_FILE"
+echo -e "${RED}===========================${NC}\n"
 exit 1

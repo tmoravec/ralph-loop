@@ -73,15 +73,16 @@ check_success() {
     echo "$1" | grep -q "$PROMISE_STRING"
 }
 
-# Run verification command and update output file
-update_state() {
+# Run verification command and write result to dest
+capture_state() {
+    local dest="$1"
     local cmd="${VERIFY_COMMAND//\$OUTPUT_FILE/$OUTPUT_FILE}"
-    local tmp_output="${OUTPUT_FILE}.tmp"
-    if bash -c "$cmd" > "$tmp_output" 2>&1; then
-        mv "$tmp_output" "$OUTPUT_FILE"
+    local tmp="${dest}.tmp"
+    if bash -c "$cmd" > "$tmp" 2>&1; then
+        mv "$tmp" "$dest"
     else
         log_warning "Verification command exited with non-zero status ($?)"
-        mv "$tmp_output" "$OUTPUT_FILE"
+        mv "$tmp" "$dest"
     fi
 }
 
@@ -112,9 +113,9 @@ log "Temp file: $OUTPUT_FILE"
 
 # Initial state capture
 log "Performing initial state capture..."
-update_state
+capture_state "$OUTPUT_FILE"
 
-trap 'rm -f "$OUTPUT_FILE" "${OUTPUT_FILE}.tmp" 2>/dev/null' EXIT
+trap 'rm -f "$OUTPUT_FILE" "${OUTPUT_FILE}.tmp" "${OUTPUT_FILE}.verify" 2>/dev/null' EXIT
 
 for (( i=1; i<=MAX_LOOPS; i++ )); do
     log "=== Loop $i/$MAX_LOOPS ==="
@@ -144,17 +145,19 @@ Please fix any errors and ensure the task is completed. If successful, output th
         log "Goal not met. Updating state for next iteration..."
         
         # Build next state
+        verify_out="${OUTPUT_FILE}.verify"
+        capture_state "$verify_out"
+
         {
             echo "--- AI RESPONSE ---"
             echo "$AI_RESPONSE"
             echo "-------------------"
             echo ""
             echo "--- VERIFICATION OUTPUT ---"
-        } > "${OUTPUT_FILE}.next"
-        
-        update_state
-        cat "$OUTPUT_FILE" >> "${OUTPUT_FILE}.next"
-        mv "${OUTPUT_FILE}.next" "$OUTPUT_FILE"
+            cat "$verify_out"
+        } > "$OUTPUT_FILE"
+
+        rm -f "$verify_out"
     fi
 done
 

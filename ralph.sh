@@ -89,9 +89,11 @@ capture_state() {
 # Main
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <task> [ai-command] [verify-command]"
-    echo "  task: the task description for the AI"
-    echo "  ai-command: command to run AI (default: pi)"
-    echo "  verify-command: command to capture state (default: cat \"\$OUTPUT_FILE\")"
+    echo ""
+    echo "Arguments:"
+    echo "  task           The task description for the AI (required)"
+    echo "  ai-command     AI command to run (default: pi)"
+    echo "  verify-command Command to capture state after each iteration (default: cat \"\$OUTPUT_FILE\")"
     exit 1
 fi
 

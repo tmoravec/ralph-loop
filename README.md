@@ -6,7 +6,7 @@ _There are many Ralph loop implementations. This is no better than the others, b
 
 ## Features
 
-- **Generic AI Integration**: Works with any CLI tool (pi, claude-code, gemini, vibe, or custom wrappers).
+- **Generic AI Integration**: Works with any CLI tool (pi, claude, gemini, vibe, or custom wrappers).
 - **State Capture**: Runs a verification command after each attempt to capture the latest errors or state.
 - **Simple Configuration**: Just three optional arguments—no environment variables or complex options.
 
@@ -20,7 +20,7 @@ _There are many Ralph loop implementations. This is no better than the others, b
 ./ralph.sh "Fix tests" "gemini"
 
 # Specify AI command and verification command
-./ralph.sh "Fix build" "claude-code" "make clean && make"
+./ralph.sh "Fix build" "claude" "make clean && make"
 ```
 
 ## Installation
@@ -38,7 +38,7 @@ Edit the defaults at the top of the script if you need to change:
 Example:
 ```bash
 # Edit ralph.sh and change these lines:
-AI_COMMAND="claude-code"
+AI_COMMAND="claude"
 MAX_LOOPS=50
 PROMISE_STRING="SUCCESS"
 ```
@@ -53,7 +53,7 @@ Arguments:
   ai-command     AI command to run (default: pi)
   verify-command Command to capture state after each iteration (default: cat "$OUTPUT_FILE")
 
-The AI command must read a prompt from stdin and output to stdout.
+The AI command must read a prompt from stdin and output to stdout. Note: `gemini` is handled specially and receives the prompt via `-y -p` flags (non-interactive mode).
 The verification command can reference $OUTPUT_FILE (the temporary output file).
 ```
 
@@ -62,7 +62,7 @@ The verification command can reference $OUTPUT_FILE (the temporary output file).
 1. **Capture State**: Runs the verification command to get initial context.
 2. **Consult AI**: Sends the task and current state to the AI tool.
 3. **Verify Success**: Checks the AI response for the `PROMISE_STRING` ("TASK_SUCCESS").
-4. **Iterate**: If not found, appends the AI's response to the state, runs the verification command again, and loops.
+4. **Iterate**: If not found, replaces the state with the AI's response and a fresh verification run, then loops.
 5. **Finalize**: Cleans up temporary state files and exits with success or failure.
 
 ## Troubleshooting

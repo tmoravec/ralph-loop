@@ -32,7 +32,6 @@ Just put the ralph.sh file to the root directory of the project and tweak it to 
 Edit the defaults at the top of the script if you need to change:
 - `AI_COMMAND`: default AI command (default: `pi`)
 - `MAX_LOOPS`: maximum iterations before giving up (default: `20`)
-- `PROMISE_STRING`: success indicator string (default: `TASK_SUCCESS`)
 - `VERIFY_COMMAND`: default verification command (default: `cat "$OUTPUT_FILE"`)
 
 Example:
@@ -40,7 +39,6 @@ Example:
 # Edit ralph.sh and change these lines:
 AI_COMMAND="claude"
 MAX_LOOPS=50
-PROMISE_STRING="SUCCESS"
 ```
 
 ## Usage
@@ -59,11 +57,11 @@ The verification command can reference $OUTPUT_FILE (the temporary output file).
 
 ## How It Works
 
-1. **Capture State**: Runs the verification command to get initial context.
-2. **Consult AI**: Sends the task and current state to the AI tool.
-3. **Verify Success**: Checks the AI response for the `PROMISE_STRING` ("TASK_SUCCESS").
-4. **Iterate**: If not found, replaces the state with the AI's response and a fresh verification run, then loops.
-5. **Finalize**: Cleans up temporary state files and exits with success or failure.
+1. **Wrap the task**: Ralph appends a small universal footer to your task prompt asking the AI to end every response with either `RALPH_CONTINUE` (more work remains) or `RALPH_DONE` (fully complete). Your task prompt needs no magic strings.
+2. **Consult AI**: Sends the wrapped prompt and the previous iteration's output to the AI tool.
+3. **Verify success**: Checks that the AI responded with `RALPH_DONE` **and** that the verification command exits 0. Both must be true.
+4. **Iterate**: If either condition fails, stores the AI response + verification output as state for the next iteration and loops.
+5. **Finalize**: Strips the internal tokens from the final output, cleans up temp files, and exits.
 
 ## Troubleshooting
 

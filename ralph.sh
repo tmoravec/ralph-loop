@@ -8,8 +8,13 @@ set -euo pipefail
 AI_COMMAND="pi"
 VERIFY_COMMAND='cat "$OUTPUT_FILE"'
 MAX_LOOPS=20
-PROMISE_STRING="TASK_SUCCESS"
 STATE_TAIL_LINES=200
+
+# Internal tokens — the AI is instructed to end every response with exactly one of these.
+# RALPH_CONTINUE means "I did work this iteration but more remains — run me again."
+# RALPH_DONE means "Everything in the task is fully complete."
+_TOKEN_CONTINUE="RALPH_CONTINUE"
+_TOKEN_DONE="RALPH_DONE"
 
 BOLD='\033[1m'
 RED='\033[1;31m'
@@ -52,7 +57,7 @@ run_ai() {
     fi
 }
 
-# Check for promise string AND verification command exit code.
+# Check whether the AI declared itself done AND the verification command exits 0.
 # Always runs the verify command and writes its output to $OUTPUT_FILE.
 check_success() {
     local ai_response="$1"
@@ -61,7 +66,8 @@ check_success() {
     local rc=0
     bash -c "$cmd" > "$tmp" 2>&1 || rc=$?
     mv "$tmp" "$OUTPUT_FILE"
-    echo "$ai_response" | grep -q "$PROMISE_STRING" && [ $rc -eq 0 ]
+    # Success only when the AI explicitly said DONE *and* verification passed.
+    echo "$ai_response" | grep -qF "$_TOKEN_DONE" && [ $rc -eq 0 ]
 }
 
 # Main
@@ -95,7 +101,6 @@ check_ai_command
 log "Starting Ralph Loop"
 log "Task: $TASK"
 log "AI: $AI_COMMAND"
-log "Promise: '$PROMISE_STRING'"
 log "Max loops: $MAX_LOOPS"
 log "Temp file: $OUTPUT_FILE"
 
@@ -107,14 +112,25 @@ for (( i=1; i<=MAX_LOOPS; i++ )); do
     CURRENT_STATE=$(tail -n "$STATE_TAIL_LINES" "$OUTPUT_FILE" 2>/dev/null || true)
     log "Current state: ${#CURRENT_STATE} chars (last $STATE_TAIL_LINES lines)"
 
-    PROMPT="$TASK
+    PROMPT="You are running inside of a Ralph loop - getting called multiple times and working on the task below iteratively. Make meaningful progress each iteration. For example, one check box in a check list.
 
-Current state/output from previous iteration (last $STATE_TAIL_LINES lines):
+When you are finished with one iteration, your response MUST end with exactly one of these two tokens on its own line:
+
+  $_TOKEN_CONTINUE  — you made progress this iteration but more work remains;
+  $_TOKEN_DONE      — the entire task is fully complete and no further work is needed
+
 ---
+The overall task:
+
+$TASK
+
+---
+Previous iteration output (last $STATE_TAIL_LINES lines):
 $CURRENT_STATE
+
 ---
 
-Please fix any errors and ensure the task is completed. If successful, output the exact string: $PROMISE_STRING"
+Reminder: do not implement everything in one go. Exit after making a piece of progress."
 
     if ! AI_RESPONSE=$(run_ai "$PROMPT"); then
         log_error "AI command returned an error. Continuing anyway..."
@@ -123,7 +139,7 @@ Please fix any errors and ensure the task is completed. If successful, output th
     if check_success "$AI_RESPONSE"; then
         log "Task accomplished in iteration $i!"
         echo ""
-        echo "$AI_RESPONSE" | sed "/^[[:space:]]*$/d;s/$PROMISE_STRING//g;s/^'//;s/'$//"
+        echo "$AI_RESPONSE" | grep -vF "$_TOKEN_DONE" | grep -vF "$_TOKEN_CONTINUE"
         echo ""
         exit 0
     else

@@ -87,7 +87,7 @@ log "Max loops: $MAX_LOOPS"
 for (( i=1; i<=MAX_LOOPS; i++ )); do
     log "=== Loop $i/$MAX_LOOPS ==="
 
-    PROMPT="Pick the next one or the single most important piece of work in the following task and implement that:
+    PROMPT="Pick the next one or the single most important task in the following goal and implement just that:
 
 ---
 $TASK
@@ -95,7 +95,9 @@ $TASK
 
 When done with this piece of work, end your response with exactly one of:
   $_TOKEN_CONTINUE  — more work remains in the overall task
-  $_TOKEN_DONE      — the entire task is now fully complete"
+  $_TOKEN_DONE      — the entire task is now fully complete
+  
+Reminder: ONLY DO ONE TASK!"
 
     if ! AI_RESPONSE=$(run_ai "$PROMPT"); then
         log_error "AI command returned an error. Continuing anyway..."

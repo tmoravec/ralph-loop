@@ -87,7 +87,7 @@ log "Max loops: $MAX_LOOPS"
 for (( i=1; i<=MAX_LOOPS; i++ )); do
     log "=== Loop $i/$MAX_LOOPS ==="
 
-    PROMPT="Pick the next one or the single most important task in the following goal and implement just that:
+    PROMPT="Pick the next one or the single most important task in the following goal and implement just that. If you are following a checklist in a file, tick off what has been accomplished. 
 
 ---
 $TASK

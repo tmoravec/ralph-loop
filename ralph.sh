@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Default configuration (edit these if needed)
-AI_COMMAND="pi"
+AI_COMMAND="claude --model sonnet --effort low --dangerously-skip-permissions"
 MAX_LOOPS=20
 
 # Internal tokens — the AI is instructed to end every response with exactly one of these.
@@ -75,7 +75,7 @@ if [ $# -lt 1 ]; then
 fi
 
 TASK="$1"
-AI_COMMAND="${2:-pi}"
+AI_COMMAND="${2:-$AI_COMMAND}"
 
 check_ai_command
 
